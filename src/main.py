@@ -63,9 +63,10 @@ def write_file(output_dir, file_to_write, mode, decoded):
     if mode == constants.MODE_DECODE:
         out_file_name += '.json'
         pass
+    elif mode == constants.MODE_ENCODE:
+        pass
 
     out_file = open(output_dir + '\\' + out_file_name, 'w+t', encoding='utf-8')
-
     if mode == constants.MODE_DECODE:
         out_file.write(decoded)
     elif mode == constants.MODE_ENCODE:
