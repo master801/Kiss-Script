@@ -2,7 +2,10 @@
 
 import json
 
-from src import constants
+if not __debug__:
+    from src import constants
+else:
+    import constants
 
 
 def encode_to_json(file_name, lines):

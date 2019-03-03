@@ -1,19 +1,27 @@
 #!/usr/bin/python3
 
-from src import json_handle
+if not __debug__:
+    from src import json_encode
+    from src import constants
+else:
+    import json_encode
+    import constants
 
 
 def decode(input_file):
     print('Decoding input file {0}...'.format(input_file))
 
-    read_lines = read(input_file)
+    read_input_data = read(input_file)
 
     input_file_name = input_file
-    if input_file_name.index('\\') is not -1:
-        input_file_name = input_file_name[input_file_name.index('\\') + 1:]
+    index = input_file_name.rindex(constants.SEPARATOR)
+    if index is not -1:
+        input_file_name = input_file_name[index + 1:]
         pass
 
-    return json_handle.encode_to_json(input_file_name, read_lines)
+    read_lines = read_input_data
+
+    return json_encode.encode_to_json(input_file_name, read_lines)
 
 
 def read(input_file):
