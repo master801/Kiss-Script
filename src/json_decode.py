@@ -2,26 +2,25 @@
 
 if not __debug__:
     from src import constants
+    from src import config
+    from src.log import Log
 else:
     import constants
+    import config
+    from log import Log
 
 
 def decode_from_json(json_file):
     if json_file is None:
+        Log.log_to_file(True, 'No json file given?!')
         return None
 
-    if 'name' in json_file:
-        print('Found deprecated key \"{}\"'.format('name'))
-        file_name = json_file['name']
-        pass
-    else:
-        file_name = json_file['file_name']
-        pass
-
+    file_name = json_file['file_name']
     lines = json_file['lines']
 
     decoded_lines = []
-    for line in lines:
+    for i in range(len(lines)):
+        line = lines[i]
         line_number = line['line_number']
 
         while len(decoded_lines) + 1 < line_number:
@@ -31,14 +30,18 @@ def decode_from_json(json_file):
         line_data = line['line']
         shift_start = line['shiftStart']
         shift_end = line['shiftEnd']
+        index_start = line['indexStart']
+        index_end = line['indexEnd']
 
         line_type = line_data['type']
 
         if line_type == 'annotation':
             params = line_data['params']
 
-            current_line = '@' + line_data['name']
+            current_line = config.get_script_config().annotation_prefix  # Apply prefix
+            current_line += line_data['name']  # Name
 
+            # Params
             param_args = []
             for param in params:
                 if isinstance(param, dict):
@@ -47,8 +50,8 @@ def decode_from_json(json_file):
 
                     if isinstance(param_value, list):
                         concat = ''
-                        for i in param_value:
-                            concat += (i + ',')
+                        for pv in param_value:
+                            concat += (pv + ',')
                             continue
                         concat = concat[:-1]
 
@@ -58,7 +61,7 @@ def decode_from_json(json_file):
                         # NOOP
                         pass
                     else:
-                        print('Unexpected param!!')
+                        Log.log_to_file(True, 'Unexpected param!!')
                         breakpoint()
                         pass
 
@@ -68,7 +71,7 @@ def decode_from_json(json_file):
                     param_args.append(param)
                     pass
                 else:
-                    print('Unexpected param!!')
+                    Log.log_to_file(True, 'Unexpected param!!')
                     breakpoint()
                     pass
                 continue
@@ -76,11 +79,14 @@ def decode_from_json(json_file):
             for param_arg in param_args:
                 current_line += (' ' + param_arg)
                 continue
+
+            # Apply suffix
+            current_line += config.get_script_config().annotation_suffix
         elif line_type == 'text':
             current_line = line_data['value']
             pass
         else:
-            print('Unexpected type found!')
+            Log.log_to_file(True, 'Unexpected type found!')
             return None
 
         if shift_start > 0:
@@ -101,8 +107,15 @@ def decode_from_json(json_file):
 
         current_line += constants.END_LINE
 
-        decoded_lines.append(current_line)
-        continue
+        if len(lines) > 1 and line_number == lines[i - 1]['line_number']:
+            prev_line = decoded_lines[len(decoded_lines) - 1]  # Get prev line
+            prev_line = prev_line[:-1]  # Remove EOL
+            prev_line += current_line  # Add 2nd annotation
+            decoded_lines[len(decoded_lines) - 1] = prev_line  # Set 2nd annotation
+            continue
+        else:
+            decoded_lines.append(current_line)
+            continue
 
     return {
         'file_name': file_name,

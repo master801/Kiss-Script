@@ -3,16 +3,17 @@
 import argparse
 import glob
 import os
-import configparser
 
 if not __debug__:
     from src import constants
-    from src import decode
-    from src import encode
+    from src import decode, encode
+    from src import config
+    from src.log import Log
 else:
     import constants
-    import decode
-    import encode
+    import decode, encode
+    import config
+    from log import Log
 
 
 def __main__():
@@ -20,19 +21,31 @@ def __main__():
     parser.add_argument('--input', dest='input_dir', required=True, nargs=1, type=str, help='Input dir')
     parser.add_argument('--output', dest='output_dir', required=True, nargs=1, type=str, help='Output dir')
     parser.add_argument('--mode', dest='mode', required=True, choices=[constants.MODE_ENCODE, constants.MODE_DECODE])
+    parser.add_argument('--nolog', dest='nolog', required=False, action='store_true', default=False)
+    parser.add_argument('--silent', '-s', dest='silent', required=False, action='store_true', default=False)
     args = parser.parse_args()
 
     input_dir = args.input_dir[0]
     output_dir = args.output_dir[0]
     mode = args.mode.upper()
+    Log.should_log = args.nolog
+    Log.silent = args.silent
+
+    Log.find_next_log_file_path()  # Find next path for log file
+
+    config.read_config()
 
     files = find_files(mode, input_dir)
 
-    print('Found {} files'.format(len(files)))
+    Log.log_to_file(True, 'Found {} files\n'.format(len(files)))
 
     if mode == constants.MODE_DECODE:
         for ks_file in files:
             decoded = decode.decode(ks_file)
+
+            if decoded is None:
+                Log.log_to_file(True, 'Failed to decode file?!')
+                continue
 
             write_file(output_dir, ks_file, mode, decoded)
             continue
@@ -40,10 +53,11 @@ def __main__():
     elif mode == constants.MODE_ENCODE:
         for ks_json_file in files:
             encoded = encode.encode(ks_json_file)
-
             write_file(output_dir, ks_json_file, mode, encoded)
             continue
         return
+
+    Log.close_log_file()
     return
 
 
@@ -98,7 +112,7 @@ def write_file(output_dir, file_to_write, mode, data):
         out_file = open(out_file_path, 'w+t', encoding='shift-jis')
         pass
     else:
-        print('Unknown mode selected?!')
+        Log.log_to_file('Unknown mode selected?!')
         breakpoint()
         return None
 
@@ -112,9 +126,17 @@ def write_file(output_dir, file_to_write, mode, data):
         pass
     out_file.close()
 
-    print('Wrote {0} file \"{1}\"\n'.format(mode.lower(), out_file_name))
+    if mode == constants.MODE_DECODE:
+        chosen_mode = 'decoded'
+        pass
+    else:
+        chosen_mode = 'encoded'
+        pass
+
+    Log.log_to_file(True, 'Wrote {0} file \"{1}\"\n'.format(chosen_mode, out_file_name))
     return
 
 
 if __name__ == '__main__':
     __main__()
+    pass
