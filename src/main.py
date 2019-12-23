@@ -44,7 +44,7 @@ def __main__():
             decoded = decode.decode(ks_file)
 
             if decoded is None:
-                Log.log_to_file(True, 'Failed to decode file?!')
+                Log.log_to_file(True, 'Failed to decode input file \"{}\"?!'.format(ks_file))
                 continue
 
             write_file(output_dir, ks_file, mode, decoded)
@@ -106,13 +106,13 @@ def write_file(output_dir, file_to_write, mode, data):
         pass
 
     if mode == constants.MODE_DECODE:
-        out_file = open(out_file_path, 'w+t', encoding='utf8')
+        out_file = open(out_file_path, 'w+t', encoding='utf8')  # Write file as utf-8 for universal use
         pass
     elif mode == constants.MODE_ENCODE:
-        out_file = open(out_file_path, 'w+t', encoding='shift-jis')
+        out_file = open(out_file_path, 'w+t', encoding=config.cfg.input_file_encoding)  # Write file with specified encoding from cfg
         pass
     else:
-        Log.log_to_file('Unknown mode selected?!')
+        Log.log_to_file(True, 'Unknown mode selected?!')
         breakpoint()
         return None
 

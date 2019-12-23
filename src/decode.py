@@ -34,7 +34,7 @@ def decode(input_file):
 def read(input_file: str):
     read_lines: list = []
     try:
-        with open(input_file, 'r+t', encoding='shift-jis', newline='\r\n') as opened_file:
+        with open(input_file, 'r+t', encoding=config.cfg.input_file_encoding, newline='\r\n') as opened_file:  # Read input file with specified encoding from cfg
             line_number: int = 0
             for line in opened_file:
                 line_number += 1
@@ -79,7 +79,8 @@ def read(input_file: str):
                 continue
             opened_file.close()
             pass
-    except UnicodeDecodeError:
-        Log.log_to_file(True, 'Failed to decode input file {0}!'.format(input_file))
+    except UnicodeDecodeError as e:
+        Log.log_to_file(True, 'Failed to read input due to unicode decoding error! \"{0}\"!?'.format(input_file))
+        Log.log_to_file(True, 'Reason: {}\n'.format(e.reason))
         return None
     return read_lines
